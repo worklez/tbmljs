@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tbml xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.teslaalliance.org/trs/tbml/1.0/tbml-core.xsd" xmlns="http://www.teslaalliance.org/trs/tbml/1.0">
+  <header>
+    <name></name>
+    <description></description>
+    <property name="dateModified">2013-03-01T13:24:51.599+01:00</property>
+  </header>
+  <body>
+    <resources>
+      <resource guid="490299a6-6277-4e0a-82df-e5735fe7769b" id="resource_0" type="firewall">
+        <boundary height="100" width="100" x="852" y="312"/>
+        <property name="name">firewall1</property>
+        <resource guid="5211e323-2838-4cea-8f1e-97b0412e53c0" id="resource_0_0" type="port">
+          <property name="name">port1</property>
+        </resource>
+        <resource guid="4a02db9b-4690-4298-815c-c999c2cee7f8" id="resource_0_1" type="port">
+          <property name="name">port2</property>
+        </resource>
+        <resource guid="aaffa5c9-8af9-43f7-a913-8ff496de5b36" id="resource_0_2" type="port">
+          <property name="name">port3</property>
+        </resource>
+        <resource guid="4c156718-688d-4dd0-b516-4b9c534023db" id="resource_0_3" type="port">
+          <property name="name">port4</property>
+        </resource>
+      </resource>
+      <resource guid="8d2f91f3-f5e4-49b9-a04a-badff98d279c" id="resource_1" type="server">
+        <boundary height="100" width="100" x="492" y="216"/>
+        <property name="name">server1</property>
+        <resource guid="b85b6a90-7e2c-4caf-bf8a-aa34eff1f833" id="resource_1_0" type="port">
+          <property name="name">port1</property>
+        </resource>
+        <resource guid="25152b76-a747-4a78-a832-cd238f4cc2ce" id="resource_1_1" type="port">
+          <property name="name">port2</property>
+        </resource>
+      </resource>
+      <resource guid="ceb40e1f-0793-4842-8660-3f4e05910d2a" id="resource_2" type="server">
+        <boundary height="100" width="100" x="480" y="384"/>
+        <property name="name">server2</property>
+        <resource guid="77620253-834a-44b1-a2f9-7b72de9e36c4" id="resource_2_0" type="port">
+          <property name="name">port1</property>
+        </resource>
+      </resource>
+      <resource guid="bb89232a-c814-4907-afe3-fc095d960a70" id="resource_3" type="server">
+        <boundary height="100" width="100" x="1152" y="324"/>
+        <property name="name">server3</property>
+        <resource guid="4ce9153c-e757-4ed1-ac16-c401c0063556" id="resource_3_0" type="port">
+          <property name="name">port1</property>
+        </resource>
+      </resource>
+    </resources>
+    <connectivity>
+      <link id="link_0">
+        <property name="name">link1</property>
+        <endpoint id="resource_1_0"/>
+        <endpoint id="resource_0_0"/>
+      </link>
+      <link id="link_1">
+        <property name="name">link2</property>
+        <endpoint id="resource_0_1"/>
+        <endpoint id="resource_1_1"/>
+      </link>
+      <link id="link_2">
+        <property name="name">link3</property>
+        <endpoint id="resource_2_0"/>
+        <endpoint id="resource_0_2"/>
+      </link>
+      <link id="link_3">
+        <property name="name">link4</property>
+        <endpoint id="resource_3_0"/>
+        <endpoint id="resource_0_3"/>
+      </link>
+    </connectivity>
+  </body>
+  <illustration>
+    <layer/>
+  </illustration>
+</tbml>

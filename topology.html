@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<!-- Load the Paper.js library -->
+<script type="text/javascript" src="lib/paper.js"></script>
+<script type="text/javascript" src="avoid.bin.js"></script>
+<script type="text/javascript" src="avoid.js"></script>
+<script type="text/javascript">
+	var router = new Avoid.Router();
+</script>
+
+<script type="text/javascript">
+	function Resource() {}
+
+	Resource.prototype = {
+		relayout: function() {
+			var rect = this.rectanglePath.bounds;
+			this.text.position.x = rect.x + (rect.width - this.text.bounds.width) / 2
+			this.text.position.y = rect.y + rect.height - 5;
+			router.moveShapeRect(this.routerShape, rect.x, rect.y, rect.bottomRight.x, rect.bottomRight.y);
+		},
+	};
+
+	Resource.resourceById = {};
+
+	Resource.fromElement = function(element, parentResource) {
+		var resource = new Resource();
+		resource.parentResource = parentResource;
+		var boundary = $(element).find("boundary");
+		if (boundary.length == 1) {
+			var h = boundary.attr("height") - 0;
+			var w = boundary.attr("width") - 0;
+			var x = boundary.attr("x") - 0;
+			var y = boundary.attr("y") - 0;
+
+			var topLeft = new paper.Point(x, y);
+			var rectSize = new paper.Size(w, h);
+			
+			// resource.rectangle = new paper.Rectangle(topLeft, rectSize);
+			// resource.routerShape = createShape(router, x, y, x + w, y + h);
+			resource.routerShape = new Avoid.Shape(router, x, y, x + w, y + h);
+			var classId = 1;
+			for (var i = 1; i <= 3; i++) {
+				var pin;
+				pin = new Avoid.ShapeConnectionPin(resource.routerShape, classId, 0.3*i, 0);
+				pin.setExclusive(1);
+				pin = new Avoid.ShapeConnectionPin(resource.routerShape, classId, 0.3*i, 1);
+				pin.setExclusive(1);
+				pin = new Avoid.ShapeConnectionPin(resource.routerShape, classId, 0, 0.3*i);
+				pin.setExclusive(1);
+				pin = new Avoid.ShapeConnectionPin(resource.routerShape, classId, 1, 0.3*i);
+				pin.setExclusive(1);
+			}
+
+			resource.rectanglePath = new paper.Path.Rectangle(new paper.Rectangle(topLeft, rectSize));
+			resource.rectanglePath.strokeColor = 'black';
+			resource.rectanglePath.fillColor = '#eeeeff';
+			// resource.rectanglePath.opacity = 0.07;
+			// console.log(resource.rectangle);
+			// console.log(resource.rectanglePath);
+			resource.name = $(element).find("> property[name='name']").text();
+
+			resource.text = new paper.PointText();
+			resource.text.justification = 'center';
+			resource.text.fillColor = 'black';
+			resource.text.content = resource.name;
+			// resource.text.position = topLeft.clone();
+			resource.text.position.x = x + (w - resource.text.bounds.width) / 2
+			resource.text.position.y = y + h - 5;
+
+			resource.group = new paper.Group([resource.rectanglePath, resource.text]);
+			resource.rectanglePath.resource = resource;
+		}
+
+		resource.id = element.attr("id");
+		Resource.resourceById[resource.id] = resource;
+
+		resource.children = [];
+
+		$(element).find("> resource").each(function() {
+			resource.children.push(Resource.fromElement($(this), resource));
+		});
+		return resource;
+	};
+
+	function Link() {}
+
+	Link.prototype = {
+		relayout: function() {
+			//var p1 = this.endpoints[0].rectanglePath.bounds.center;
+			//var p2 = this.endpoints[1].rectanglePath.bounds.center;
+			var p1 = this.endpoints[0].routerShape;
+			var p2 = this.endpoints[1].routerShape;
+			var midy = (p1.y + p2.y) / 2;
+			if (!this.hasOwnProperty('routerConnection')) {
+				this.routerConnection = Avoid.Connection.connectShapes(router, p1, p2, 1, 1);
+				// this.routerConnection = connectShapes(router, p1, p2, 1, 1);
+				// this.routerConnection = connect(router, p1.x, p1.y, p2.x, p2.y);
+			} else {
+				
+			}
+			router.processTransaction();
+
+			var points = this.routerConnection.displayRoute();
+			var segments = [];
+			for (var i = 0; i < points.length; i++) {
+				segments.push(new paper.Point(points[i]));
+			}
+
+			// var segments = [p1, new paper.Point(p1.x, midy), new paper.Point(p2.x, midy), p2];
+
+			// var segments = [link.endpoints[0].rectanglePath.bounds.center, link.endpoints[1].rectanglePath.bounds.center];
+			
+			//if (midy != p1.y && midy != p2.y) {
+			if (!this.hasOwnProperty("path")) {
+				this.path = new paper.Path(segments);
+				this.path.strokeColor = 'gray';
+			} else {
+				this.path.segments = segments;
+			}
+			//}
+		}
+	};
+
+	Link.fromElement = function(element, topology) {
+		var link = new Link();
+		link.name = $(element).find("> property[name='name']").text();
+		// console.log(link.name);
+		link.endpoints = [];
+
+		var findDrawableResource = function(resource) {
+			if (resource == null) {
+				return null;
+			}
+			// assume only root resources are drawn
+			if (resource.parentResource == null) {
+				return resource;
+			}
+			return findDrawableResource(resource.parentResource);
+		};
+
+
+		$(element).find("> endpoint").each(function() {
+			var id = $(this).attr("id");
+			var resource = Resource.resourceById[id];
+			var drawableResource = findDrawableResource(resource);
+			link.endpoints.push(drawableResource);
+		});
+
+		//var p1 = link.endpoints[0].rectanglePath.bounds.center;
+		//var p2 = link.endpoints[1].rectanglePath.bounds.center;
+		//link.routerConnection = connect(router, p1.x, p1.y, p2.x, p2.y);
+		link.relayout();
+
+		return link;
+	};
+
+	function Topology() {
+		this.resources = [];
+		this.resource_uuids = [];
+		this.links = [];
+	}
+
+	Topology.prototype = {
+		addResource: function(resource) {
+			 this.resources.push(resource);
+			 //this.resource_uuids.push(resource.uuid);
+		},
+		addLink: function(link) {
+			 this.links.push(link);
+			 //this.resource_uuids.push(resource.uuid);
+		},
+	};
+</script>
+<!-- Define inlined PaperScript associate it with topology -->
+<script type="text/paperscript" canvas="topology">
+
+	var topology = new Topology();
+
+    $.ajax({
+        // url: 'Physical_topology.tbml',
+        url: 'test.tbml',
+        type: 'GET',
+        dataType: 'xml',
+        timeout: 1000,
+        error: function () {
+            alert('Error loading XML document');
+        },
+        success: function(xml)
+        {
+			$(xml).find("resources > resource").each(function() {
+				topology.addResource(Resource.fromElement($(this), null));
+			});
+			$(xml).find("connectivity > link").each(function() {
+				topology.addLink(Link.fromElement($(this), topology));
+			});
+        }
+    });
+
+var hitOptions = {
+    segments: true,
+    stroke: true,
+    fill: true,
+    tolerance: 5
+};
+
+var selectedItem = null;
+var selectedItemDragOffset = null;
+
+function onMouseMove(event) {
+	if (selectedItem != null) {
+		selectedItem.position = event.point + selectedItemDragOffset;
+		selectedItem.resource.relayout();
+
+		for (i in topology.links) {
+			//console.log(topology.links[i]);
+			topology.links[i].relayout();
+		}
+	}
+}
+
+function onMouseDown(event) {
+    var hitResult = project.hitTest(event.point, hitOptions);
+    project.activeLayer.selected = false;
+	// selectedItem = null;
+    if (hitResult && hitResult.item && hitResult.item.resource) {
+        hitResult.item.selected = true;
+		selectedItem = hitResult.item;
+		selectedItemDragOffset = selectedItem.position - event.point;
+	}
+	
+}
+
+function onMouseUp(event) {
+	selectedItem = null;
+}
+</script>
+</head>
+<body>
+    <canvas id="topology" resize></canvas>
+</body>
+</html>
